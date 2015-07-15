@@ -1,24 +1,37 @@
 -- from evancz/start-app
 
-import Html exposing (div, button, text)
+import Html exposing (..)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import StartApp
 
 main =
   StartApp.start { model = model, view = view, update = update }
 
-model = 0
 
-view address model =
+model : Html
+model =
+  cell "9"
+  
+    
+cell: String -> Html
+cell val = 
   div []
-    [ button [ onClick address Decrement ] [ text "-" ]
-    , div [] [ text (toString model) ]
-    , button [ onClick address Increment ] [ text "+" ]
+    [ input 
+      [ value val
+      , placeholder "_"
+      , Html.Attributes.size 1
+      , myStyle
+      ]
+      []
     ]
+    
 
-type Action = Increment | Decrement
-
-update action model =
-  case action of
-    Increment -> model + 1
-    Decrement -> model - 1
+myStyle : Attribute
+myStyle =
+  style
+    [ ("height", "20px")
+    , ("padding", "1px 4px")
+    , ("font-size", "20px")
+    , ("text-align", "center")
+    ]
