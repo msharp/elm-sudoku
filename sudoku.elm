@@ -14,7 +14,8 @@ model = "00302060090030500100180640000810290070000000800670820000260950080020300
   
 view address model =
   div []
-      [ div [] [ text (toString squares) ]
+      [ div [] [ text (toString unitlist) ]
+      , div [] [ text (toString (List.length unitlist)) ]
       ]
   
 type Action = Reset | Update
@@ -49,16 +50,29 @@ myStyle =
 
 -- the board elements
 
-cross_cut ref list =
-  List.map (\c -> String.append ref (String.fromChar c)) (String.toList list) 
+cross_concat : String -> String -> List String
+cross_concat rows cols =
+  cross rows cols |> List.concat
+
+inner_cross : String -> String -> List String
+inner_cross row cols =
+  List.map (\c -> String.append row (String.fromChar c)) (String.toList cols) 
   
-cross a b =
-  List.map (\d -> cross_cut (String.fromChar d) a) (String.toList b) 
-  |> List.concat
+cross : String -> String -> List (List String)
+cross rows cols =
+  List.map (\c -> inner_cross (String.fromChar c) cols) (String.toList rows) 
+
+cross_multi : String -> List String -> List (List String)
+cross_multi rows cols =
+  List.map (\c -> cross_concat rows c) cols
 
 digits  = "123456789"
 rows    = "ABCDEFGHI"
 cols    = digits
-squares = cross rows cols
-
-
+squares = 
+  cross_concat rows cols 
+unitlist = 
+  List.append (cross rows cols) (cross cols rows) 
+  |> List.append (cross_multi "ABC" ["123","456","789"]) 
+  |> List.append (cross_multi "DEF" ["123","456","789"]) 
+  |> List.append (cross_multi "GHI" ["123","456","789"]) 
