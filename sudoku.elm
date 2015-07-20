@@ -5,18 +5,27 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import StartApp
 import Array
+import Dict
 import String exposing (..)
 
 main =
   StartApp.start { model = model, view = view, update = update }
 
 
-model = "00302060090030500100180640000810290070000000800670820000260950080020300900501030"
+model = random_board
   
 view address model =
   div []
-      [ div [] [ text (toString unitlist) ]
+      [ div [] [ text (toString squares) ]
+      , div [] [ text (toString (List.length squares)) ]
+      , div [] [ text " ------- "]
+      , div [] [ text (toString unitlist) ]
       , div [] [ text (toString (List.length unitlist)) ]
+      , div [] [ text " ------- "]
+      -- , div [] [ text (toString units) ]
+      -- , div [] [ text (toString peers) ]
+      , div [] [ text " ------- "]
+      , div [] [ text (toString (get_peers "C2")) ]
       ]
   
 type Action = Reset | Update
@@ -49,53 +58,83 @@ myStyle =
     ]
 
 
+random_board : String
+random_board = 
+  "00302060090030500100180640000810290070000000800670820000260950080020300900501030"
+
 -- the board elements
 
-cross_concat : String -> String -> List String
-cross_concat rows cols =
-  cross rows cols |> List.concat
-
-inner_cross : String -> String -> List String
-inner_cross row cols =
-  List.map (\c -> String.append row (String.fromChar c)) (String.toList cols) 
-  
-cross : String -> String -> List (List String)
-cross rows cols =
-  List.map (\c -> inner_cross (String.fromChar c) cols) (String.toList rows) 
-
-cross_multi : String -> List String -> List (List String)
-cross_multi rows cols =
-  List.map (\c -> cross_concat rows c) cols
-
-digits  = "123456789"
-
-digit_blocks = 
-  blocks digits
-
-rows    = "ABCDEFGHI"
-
-row_blocks = 
-  blocks rows
-
-blocks : String -> List String
-blocks rc =
-  List.append [(String.slice 0 3 rc)] [(String.slice 3 6 rc)]
-  |> List.append [(String.slice 6 9 rc)]
+digits    = "123456789"
+rows      = "ABCDEFGHI"
+cols      = digits
+squares   = cross rows cols 
+unitlist  = (cross_digits rows) 
+            |> List.append (cross_alphas digits) 
+            |> List.append block_units
+units     = List.foldr (uuu) Dict.empty squares
+peers     = List.foldr (ppp) Dict.empty squares
 
 
-get_row_block : Int ->  List(String) -> String
-get_row_block ix row_blocks =
-  case (Array.get ix (Array.fromList row_blocks)) of
-    Just block  -> block
-    Nothing     -> ""
- 
+-- junk to generate board elements
+alphas = rows
 
-cols    = digits
-squares = 
-  cross_concat rows cols 
-unitlist = 
-  List.append (cross rows cols) (cross cols rows) 
-  |> List.append (cross_multi (get_row_block 0 row_blocks) digit_blocks)
-  |> List.append (cross_multi (get_row_block 1 row_blocks) digit_blocks)
-  |> List.append (cross_multi (get_row_block 2 row_blocks) digit_blocks)
+-- generate squares
+
+cross alphas digits =
+  List.map (\a -> cross_digs a digits) (str_list alphas) 
+  |> List.concat
+
+cross_digs alpha digits = 
+  List.map (\d -> String.append alpha d) (str_list digits) 
+
+str_list str =
+  List.map String.fromChar (String.toList str) 
+
+-- generate unitlists
+
+cross_alphas digits =
+  String.foldr (cfa) [] digits
+
+cfa f a = 
+  (cross alphas (String.fromChar f)) :: a
+
+cross_digits alphas =
+  String.foldr (cfd) [] alphas
+
+cfd f a = 
+  (cross (String.fromChar f) digits) :: a
+
+-- fix this
+block_units : List (List String)
+block_units =
+  (cross "GHI" "789") :: (cross "GHI" "456") :: (cross "GHI" "123") :: 
+  (cross "DEF" "789") :: (cross "DEF" "456") :: (cross "DEF" "123") :: 
+  (cross "ABC" "789") :: (cross "ABC" "456") :: (cross "ABC" "123") :: []
+
+-- get units
+
+square_units : String -> List(List String)
+square_units sq =
+   List.filter (\l -> List.member sq l) unitlist
+
+uuu f a = 
+  Dict.insert f (square_units f) a
+
+-- get unique set of peers
+get_peers : String -> List String
+get_peers sq =
+  case Dict.get sq units of
+    Just peers  -> List.concat peers |> List.filter (\s -> s /= sq) |> set 
+    Nothing     -> []
+
+-- a unique set from a list
+set : List String -> List String
+set squares =
+  List.foldr (set_foldr) [] squares
+
+set_foldr f a = 
+  if (List.member f a) then a else (List.append [f] a)
+
+ppp f a =
+  Dict.insert f (get_peers f) a
 
