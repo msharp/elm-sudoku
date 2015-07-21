@@ -41,63 +41,25 @@ unitlist  = (cross_digits rows)
 -}
 units : Dict.Dict String (List (List String))
 units = 
-  List.foldr (uuu) Dict.empty squares
+  let uuu f a =
+    Dict.insert f (getUnits f) a
+  in
+    List.foldr (uuu) Dict.empty squares
 
 {-| The peers of each square 
 -}
 peers : Dict.Dict String (List String)
 peers = 
-  List.foldr (ppp) Dict.empty squares
-
-
--- junk to generate board elements
-
--- generate squares
-
-cross : String -> String -> List String
-cross alphas digits =
-  List.map (\a -> cross_digs a digits) (str_list alphas) 
-  |> List.concat
-
-cross_digs alpha digits = 
-  List.map (\d -> String.append alpha d) (str_list digits) 
-
-str_list str =
-  List.map String.fromChar (String.toList str) 
-
--- generate unitlists
-
-cross_alphas digits =
-  String.foldr (cfa) [] digits
-
-cfa f a = 
-  (cross alphas (String.fromChar f)) :: a
-
-cross_digits alphas =
-  String.foldr (cfd) [] alphas
-
-cfd f a = 
-  (cross (String.fromChar f) digits) :: a
-
--- fix this
-block_units : List (List String)
-block_units =
-  (cross "GHI" "789") :: (cross "GHI" "456") :: (cross "GHI" "123") :: 
-  (cross "DEF" "789") :: (cross "DEF" "456") :: (cross "DEF" "123") :: 
-  (cross "ABC" "789") :: (cross "ABC" "456") :: (cross "ABC" "123") :: []
-
--- get units
+  let ppp f a =
+    Dict.insert f (getPeers f) a
+  in
+    List.foldr (ppp) Dict.empty squares
 
 {-| Get the list of units for a given square
 -}
 getUnits : String -> List(List String)
 getUnits sq =
    List.filter (\l -> List.member sq l) unitlist
-
-uuu f a = 
-  Dict.insert f (getUnits f) a
-
--- get unique set of peers
 
 {-| Get the list of peers for a given square
 -}
@@ -107,15 +69,50 @@ getPeers sq =
     Just peers  -> List.concat peers |> List.filter (\s -> s /= sq) |> set 
     Nothing     -> []
 
-ppp f a =
-  Dict.insert f (getPeers f) a
+-- junk to generate board elements
+
+-- transform a string into a list of single-char strings
+str_list : String -> List String
+str_list str =
+  List.map String.fromChar (String.toList str) 
 
 -- a unique set from a list
-
 set : List String -> List String
 set squares =
-  List.foldr (set_foldr) [] squares
+  let s f a = 
+    if (List.member f a) then a else (List.append [f] a)
+  in
+    List.foldr (s) [] squares
 
-set_foldr f a = 
-  if (List.member f a) then a else (List.append [f] a)
+-- generate squares
+
+cross : String -> String -> List String
+cross alphas digits =
+  let cd alpha digits = 
+    List.map (\d -> String.append alpha d) (str_list digits) 
+  in
+    List.map (\a -> cd a digits) (str_list alphas) 
+    |> List.concat
+
+-- generate unitlists
+
+cross_alphas digits =
+  let cfa f a = 
+    (cross alphas (String.fromChar f)) :: a
+  in
+     String.foldr (cfa) [] digits
+
+cross_digits alphas =
+  let cfd f a = 
+    (cross (String.fromChar f) digits) :: a
+  in
+    String.foldr (cfd) [] alphas
+
+-- FIXME not very functional :(
+block_units : List (List String)
+block_units =
+  (cross "GHI" "789") :: (cross "GHI" "456") :: (cross "GHI" "123") :: 
+  (cross "DEF" "789") :: (cross "DEF" "456") :: (cross "DEF" "123") :: 
+  (cross "ABC" "789") :: (cross "ABC" "456") :: (cross "ABC" "123") :: []
+
 
