@@ -14,7 +14,7 @@ main =
   StartApp.start { model = model, view = view, update = update }
 
 
-model = random_board
+model = randomBoard
   
 view address model =
   div []
@@ -27,7 +27,7 @@ view address model =
       -- , div [] [ text (toString Sudoku.units) ]
       -- , div [] [ text (toString Sudoku.peers) ]
       , div [] [ text " ------- "]
-      , div [] [ text (toString (Sudoku.get_peers "C2")) ]
+      , div [] [ text (toString (Sudoku.getPeers "C2")) ]
       ]
   
 type Action = Reset | Update
@@ -60,7 +60,7 @@ myStyle =
     ]
 
 
-random_board : String
-random_board = 
+randomBoard : String
+randomBoard = 
   "00302060090030500100180640000810290070000000800670820000260950080020300900501030"
 

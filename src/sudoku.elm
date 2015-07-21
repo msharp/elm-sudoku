@@ -1,9 +1,9 @@
 module Sudoku (
-                rows, cols, squares, unitlist, units, peers, get_units, get_peers
+                rows, cols, squares, unitlist, units, peers, getUnits, getPeers
                 ) where
 {-| Sudoku board representation and solver
 
-@docs rows, cols, squares, unitlist, units, peers, get_units, get_peers
+@docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
 -}
 
 import Array
@@ -54,6 +54,7 @@ peers =
 
 -- generate squares
 
+cross : String -> String -> List String
 cross alphas digits =
   List.map (\a -> cross_digs a digits) (str_list alphas) 
   |> List.concat
@@ -89,25 +90,25 @@ block_units =
 
 {-| Get the list of units for a given square
 -}
-get_units : String -> List(List String)
-get_units sq =
+getUnits : String -> List(List String)
+getUnits sq =
    List.filter (\l -> List.member sq l) unitlist
 
 uuu f a = 
-  Dict.insert f (get_units f) a
+  Dict.insert f (getUnits f) a
 
 -- get unique set of peers
 
 {-| Get the list of peers for a given square
 -}
-get_peers : String -> List String
-get_peers sq =
+getPeers : String -> List String
+getPeers sq =
   case Dict.get sq units of
     Just peers  -> List.concat peers |> List.filter (\s -> s /= sq) |> set 
     Nothing     -> []
 
 ppp f a =
-  Dict.insert f (get_peers f) a
+  Dict.insert f (getPeers f) a
 
 -- a unique set from a list
 
