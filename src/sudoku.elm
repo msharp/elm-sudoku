@@ -1,9 +1,12 @@
 module Sudoku (
-                rows, cols, squares, unitlist, units, peers, getUnits, getPeers
+                rows, cols, squares, unitlist, units, peers, getUnits, getPeers,
+                gridValues
                 ) where
 {-| Sudoku board representation and solver
 
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
+
+@docs gridValues
 -}
 
 import Array
@@ -69,6 +72,16 @@ getPeers sq =
     Just peers  -> List.concat peers |> List.filter (\s -> s /= sq) |> set 
     Nothing     -> []
 
+
+{-| Parse a raw grid string into a dict of squares: values
+-}
+gridValues : String -> Dict.Dict String String
+gridValues grid = 
+  str_list grid 
+  |> zip squares
+  |> Dict.fromList
+
+
 -- junk to generate board elements
 
 -- transform a string into a list of single-char strings
@@ -115,4 +128,17 @@ block_units =
   (cross "DEF" "789") :: (cross "DEF" "456") :: (cross "DEF" "123") :: 
   (cross "ABC" "789") :: (cross "ABC" "456") :: (cross "ABC" "123") :: []
 
+{-| The zip function takes in two lists and returns a combined
+list. It combines the elements of each list pairwise until one
+of the lists runs out of elements.
 
+    zip [1,2,3] ['a','b','c'] == [(1,'a'), (2,'b'), (3,'c')]
+    
+-}
+zip : List a -> List b -> List (a,b)
+zip xs ys =
+    case (xs, ys) of
+      ( x :: xs', y :: ys' ) ->
+        (x,y) :: zip xs' ys'
+      (_, _) ->
+         []
