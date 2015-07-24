@@ -75,11 +75,20 @@ getPeers sq =
 
 {-| Parse a raw grid string into a dict of squares: values
 -}
-gridValues : String -> Dict.Dict String String
+gridValues : String -> Dict.Dict String (Maybe String)
 gridValues grid = 
-  str_list grid 
-  |> zip squares
-  |> Dict.fromList
+  let 
+      sq_value s =
+        if List.member s (str_list digits) then
+          Just s
+        else
+          Nothing
+  in    
+    str_list grid 
+    |> List.map sq_value 
+    |> zip squares 
+    |> Dict.fromList
+
 
 
 -- junk to generate board elements
