@@ -1,12 +1,12 @@
 module Sudoku (
                 rows, cols, squares, unitlist, units, peers, getUnits, getPeers,
-                gridValues
+                gridValues, parseGrid
                 ) where
 {-| Sudoku board representation and solver
 
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
 
-@docs gridValues
+@docs gridValues, parseGrid
 -}
 
 import Array
@@ -89,9 +89,32 @@ gridValues grid =
     |> zip squares 
     |> Dict.fromList
 
+{-| Parse the grid and set fixed values and possible values for all squares
+-}
+parseGrid : String -> Dict.Dict String String
+parseGrid grid =
+  let
+    values = 
+      zip squares (List.repeat (List.length squares) digits)
+    known_or_any sq =
+      case sq of
+        (s, Just sq_val) -> (s, sq_val)
+        (s, Nothing)     -> (s, digits)
+    -- TODO propagate failure to assign a value
+  in
+    Dict.toList (gridValues grid)
+    |> List.map known_or_any 
+    |> Dict.fromList
 
 
+assign values s d =
+  False
+
+  
+
+-------------------------------------------------------
 -- junk to generate board elements
+-------------------------------------------------------
 
 -- transform a string into a list of single-char strings
 str_list : String -> List String
