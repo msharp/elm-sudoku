@@ -3,7 +3,7 @@
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
-import StartApp
+import Html.App as App
 import Array
 import Dict
 import String exposing (..)
@@ -11,12 +11,24 @@ import String exposing (..)
 import Sudoku
 
 main =
-  StartApp.start { model = model, view = view, update = update }
+  App.beginnerProgram 
+    { model = init
+    , view = view
+    , update = update 
+    }
+
+type alias Model = 
+  {
+    board: String
+  }
 
 
-model = randomBoard
+init : (Model, Cmd String)
+init =
+  (Model randomBoard, Cmd.none)
   
-view address model =
+view: (Model, Cmd String) -> Html Action
+view model =
   div []
       [ div [] [ text (toString Sudoku.squares) ]
       , div [] [ text (toString (List.length Sudoku.squares)) ]
@@ -31,13 +43,17 @@ view address model =
       ]
   
 type Action = Reset | Update
+
+update : Action -> (Model, Cmd String) -> (Model, Cmd String)
 update action model =
   case action of
-    Reset -> "00302060090030500100180640000810290070000000800670820000260950080020300900501030"
-    Update -> "10302060090030500100180640000810290070000100800670820000260950080120300900501031"
+    Reset -> 
+      (Model "00302060090030500100180640000810290070000000800670820000260950080020300900501030", Cmd.none)
+    Update -> 
+      (Model "10302060090030500100180640000810290070000100800670820000260950080120300900501031", Cmd.none)
 
     
-cell: String -> Html
+cell: String -> Html String
 cell val = 
   div []
     [ input 
@@ -50,7 +66,7 @@ cell val =
     ]
     
 
-myStyle : Attribute
+myStyle : Attribute String
 myStyle =
   style
     [ ("height", "20px")

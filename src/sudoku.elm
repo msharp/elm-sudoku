@@ -1,7 +1,7 @@
-module Sudoku (
+module Sudoku exposing (
                 rows, cols, squares, unitlist, units, peers, getUnits, getPeers,
                 gridValues, parseGrid
-                ) where
+                ) 
 {-| Sudoku board representation and solver
 
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
@@ -100,20 +100,32 @@ parseGrid grid =
       case sq of
         (s, Just sq_val) -> (s, sq_val)
         (s, Nothing)     -> (s, digits)
+    parse_grid =
+      Dict.toList (gridValues grid)
+      |> List.map known_or_any 
+      |> Dict.fromList
     -- TODO propagate failure to assign a value
   in
-    Dict.toList (gridValues grid)
-    |> List.map known_or_any 
-    |> Dict.fromList
+    -- if there are any Nothings left assignment failed
+    --if (List.member Nothing (Dict.values parse_grid)) then
+    --   Nothing
+    --else
+    --  Just 
+    parse_grid
+    
+       
 
 
 assign values s d =
   False
 
-  
+
+contradictoryGrid grid = 
+  Dict.values grid
+  |> List.member Nothing
 
 -------------------------------------------------------
--- junk to generate board elements
+-- cruft to generate board elements
 -------------------------------------------------------
 
 -- transform a string into a list of single-char strings
