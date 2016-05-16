@@ -47,23 +47,38 @@ update action model =
 
 -- VIEW
 
-view : { board : String } -> Html String
+view : Model -> Html String
 view model =
   div []
-      [ div [] [ text (toString Sudoku.squares) ]
-      , div [] [ text (toString (List.length Sudoku.squares)) ]
-      , div [] [ text " ------- "]
-      , div [] [ text (toString Sudoku.unitlist) ]
-      , div [] [ text (toString (List.length Sudoku.unitlist)) ]
-      , div [] [ text " ------- "]
+      [ sudokuGrid model.board
+      -- , div [] [ text " ------- "]
+      -- , div [] [ text " ------- "]
+      -- , div [] [ text (toString Sudoku.squares) ]
+      -- , div [] [ text (toString (List.length Sudoku.squares)) ]
+      -- , div [] [ text " ------- "]
+      -- , div [] [ text (toString Sudoku.unitlist) ]
+      -- , div [] [ text (toString (List.length Sudoku.unitlist)) ]
+      -- , div [] [ text " ------- "]
+      -- , div [] [ text (toString Sudoku.blocks) ]
       -- , div [] [ text (toString Sudoku.units) ]
       -- , div [] [ text (toString Sudoku.peers) ]
-      , div [] [ text " ------- "]
-      , div [] [ text (toString (Sudoku.getPeers "C2")) ]
-      , div [] [ text " ------- "]
-      , sudokuGrid randomBoard
-      -- , cell "1"
+      -- , div [] [ text " ------- "]
+      -- , div [] [ text (toString (Sudoku.getPeers "C2")) ]
+      -- , div [] [ text " ------- "]
+      -- , div [] [ text (toString (cellBlock "C2")) ]
       ]
+
+cellBlock : String -> Int
+cellBlock cell =
+  let
+      cb = List.map (\x -> List.member cell x) Sudoku.blocks
+        |> List.indexedMap (,) 
+        |> List.filter (\x -> snd x == True)
+        |> List.head
+  in
+    case cb of
+      Just (a,b) -> a + 1
+      _          -> 0
 
 
 cell : Char -> String -> Html String
@@ -73,23 +88,31 @@ cell val square =
       [ value (String.fromChar val)
       , id square
       , Html.Attributes.size 1
-      , cellStyle
+      , cellStyle square
       ]
       []
     ]
 
 
-cellStyle : Attribute String
-cellStyle =
-  style
-    [ ("height", "20px")
-    , ("width", "20px")
-    , ("padding", "4px 4px")
-    , ("font-size", "20px")
-    , ("text-align", "center")
-    , ("border", "1px black solid")
-    , ("float", "left")
-    ]
+cellStyle : String -> Attribute String
+cellStyle cell =
+  let
+    grey_block = List.member (cellBlock cell) [1,3,5,7,9]
+    cell_bg =
+      case grey_block of
+        True    -> "#ddd"
+        False   -> "#fff"
+  in
+    style
+      [ ("height", "20px")
+      , ("width", "20px")
+      , ("padding", "4px 4px")
+      , ("font-size", "20px")
+      , ("text-align", "center")
+      , ("border", "1px black solid")
+      , ("float", "left")
+      , ("background-color", cell_bg)
+      ]
 
 
 sudokuGrid : String -> Html String

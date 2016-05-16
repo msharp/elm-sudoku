@@ -1,12 +1,12 @@
 module Sudoku exposing (
                 rows, cols, squares, unitlist, units, peers, getUnits, getPeers,
-                gridValues, parseGrid
+                gridValues, parseGrid, blocks
                 ) 
 {-| Sudoku board representation and solver
 
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
 
-@docs gridValues, parseGrid
+@docs gridValues, parseGrid, blocks
 -}
 
 import Array
@@ -38,7 +38,7 @@ squares = cross rows cols
 unitlist : List (List String)
 unitlist  = (cross_digits rows) 
             |> List.append (cross_alphas digits) 
-            |> List.append block_units
+            |> List.append blocks
 
 {-| The units to which each square belongs 
 -}
@@ -165,12 +165,26 @@ cross_digits alphas =
   in
     String.foldr (cfd) [] alphas
 
--- FIXME not very functional :(
-block_units : List (List String)
-block_units =
-  (cross "GHI" "789") :: (cross "GHI" "456") :: (cross "GHI" "123") :: 
-  (cross "DEF" "789") :: (cross "DEF" "456") :: (cross "DEF" "123") :: 
-  (cross "ABC" "789") :: (cross "ABC" "456") :: (cross "ABC" "123") :: []
+{-| The 9 blocks of the sudoku grid
+-}
+blocks : List (List String)
+blocks =
+  let a = blockGroups alphas
+        |> List.map (\l -> List.repeat 3 l) 
+        |> List.concat
+      n = blockGroups digits
+        |> List.repeat 3 
+        |> List.concat 
+  in
+     List.map2 cross a n
+
+blockGroups : String -> List String
+blockGroups labels =
+  List.append [] [(String.slice 0 3 labels)]
+  |> List.append [(String.slice 3 6 labels)]
+  |> List.append [(String.slice 6 9 labels)]
+  |> List.reverse
+
 
 {-| The zip function takes in two lists and returns a combined
 list. It combines the elements of each list pairwise until one
@@ -186,3 +200,5 @@ zip xs ys =
         (x,y) :: zip xs' ys'
       (_, _) ->
          []
+
+
