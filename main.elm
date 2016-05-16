@@ -10,12 +10,15 @@ import String exposing (..)
 
 import Sudoku
 
+
 main =
-  App.beginnerProgram 
-    { model = init
+  App.program
+    { init = init
     , view = view
-    , update = update 
+    , update = update
+    , subscriptions = \_ -> Sub.none
     }
+
 
 type alias Model = 
   {
@@ -26,8 +29,25 @@ type alias Model =
 init : (Model, Cmd String)
 init =
   (Model randomBoard, Cmd.none)
-  
-view: (Model, Cmd String) -> Html Action
+
+
+randomBoard : String
+randomBoard = 
+  "003020600900305001001806400008102900700000008006708200002609500800203009005010300"
+
+
+-- UPDATE
+
+type Action = Reset | Update
+
+update : String -> { board : String } -> ( Model, Cmd String )
+update action model =
+  (Model randomBoard, Cmd.none)
+
+
+-- VIEW
+
+view : { board : String } -> Html String
 view model =
   div []
       [ div [] [ text (toString Sudoku.squares) ]
@@ -40,43 +60,55 @@ view model =
       -- , div [] [ text (toString Sudoku.peers) ]
       , div [] [ text " ------- "]
       , div [] [ text (toString (Sudoku.getPeers "C2")) ]
+      , div [] [ text " ------- "]
+      , sudokuGrid randomBoard
+      -- , cell "1"
       ]
-  
-type Action = Reset | Update
 
-update : Action -> (Model, Cmd String) -> (Model, Cmd String)
-update action model =
-  case action of
-    Reset -> 
-      (Model "00302060090030500100180640000810290070000000800670820000260950080020300900501030", Cmd.none)
-    Update -> 
-      (Model "10302060090030500100180640000810290070000100800670820000260950080120300900501031", Cmd.none)
 
-    
-cell: String -> Html String
-cell val = 
+cell : Char -> String -> Html String
+cell val square = 
   div []
     [ input 
-      [ value val
-      , placeholder "_"
+      [ value (String.fromChar val)
+      , id square
       , Html.Attributes.size 1
-      , myStyle
+      , cellStyle
       ]
       []
     ]
-    
 
-myStyle : Attribute String
-myStyle =
+
+cellStyle : Attribute String
+cellStyle =
   style
     [ ("height", "20px")
-    , ("padding", "1px 4px")
+    , ("width", "20px")
+    , ("padding", "4px 4px")
     , ("font-size", "20px")
     , ("text-align", "center")
+    , ("border", "1px black solid")
+    , ("float", "left")
     ]
 
 
-randomBoard : String
-randomBoard = 
-  "00302060090030500100180640000810290070000000800670820000260950080020300900501030"
+sudokuGrid : String -> Html String
+sudokuGrid board =
+  -- let cells = List.map toString (String.toList board)
+  let 
+    noZero char =   
+      case char of
+        '0' -> ' '
+        _   -> char
+
+    cells = List.map noZero (String.toList board)
+  in
+  div [
+        style [ ("width", "270px")
+              , ("height", "270px")
+              , ("margin", "20px")
+              , ("border", "1px black solid")
+              ] 
+      ]
+      (List.map2 cell cells Sudoku.squares)
 
