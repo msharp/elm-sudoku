@@ -1,12 +1,8 @@
--- from evancz/start-app
-
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
 import Html.App as App
-import Array
-import Dict
 import String exposing (..)
+import Dict
 
 import Sudoku
 
@@ -52,6 +48,7 @@ view model =
   div []
       [ sudokuGrid model.board
       -- , div [] [ text " ------- "]
+      , div [] [ text (toString Sudoku.values) ]
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.squares) ]
       -- , div [] [ text (toString (List.length Sudoku.squares)) ]
@@ -65,41 +62,50 @@ view model =
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString (Sudoku.getPeers "C2")) ]
       -- , div [] [ text " ------- "]
-      -- , div [] [ text (toString (cellBlock "C2")) ]
+      -- , div [] [ text (toString (cellBlockNumber "C2")) ]
       ]
 
-cellBlock : String -> Int
-cellBlock cell =
+cellBlockNumber : String -> Int
+cellBlockNumber cell =
   let
-      cb = List.map (\x -> List.member cell x) Sudoku.blocks
-        |> List.indexedMap (,) 
-        |> List.filter (\x -> snd x == True)
-        |> List.head
+    cb = 
+      List.map (\x -> List.member cell x) Sudoku.blocks
+      |> List.indexedMap (,) 
+      |> List.filter (\x -> snd x == True)
+      |> List.head
   in
     case cb of
       Just (a,b) -> a + 1
       _          -> 0
 
 
-cell : Char -> String -> Html String
-cell val square = 
-  div []
-    [ input 
-      [ value (String.fromChar val)
-      , id square
-      , Html.Attributes.size 1
-      , cellStyle square
+cellBlock : (String, Maybe String) -> Html String
+cellBlock (square, val) = 
+  let 
+    noZero v =   
+      case v of
+        Just v  -> v
+        Nothing -> ""
+  in
+    div []
+      [ input 
+        [ value (noZero val)
+        , id square
+        , Html.Attributes.size 1
+        , Html.Attributes.maxlength 1
+        , cellStyle square
+        ]
+        []
       ]
-      []
-    ]
 
 
 cellStyle : String -> Attribute String
 cellStyle cell =
   let
-    grey_block = List.member (cellBlock cell) [1,3,5,7,9]
+    block_number = 
+      cellBlockNumber cell
     cell_bg =
-      case grey_block of
+      case List.member block_number [1,3,5,7,9] of
         True    -> "#ddd"
         False   -> "#fff"
   in
@@ -117,14 +123,10 @@ cellStyle cell =
 
 sudokuGrid : String -> Html String
 sudokuGrid board =
-  -- let cells = List.map toString (String.toList board)
   let 
-    noZero char =   
-      case char of
-        '0' -> ' '
-        _   -> char
-
-    cells = List.map noZero (String.toList board)
+    cells = 
+      Sudoku.gridValues board
+      |> Dict.toList -- list can be mapped
   in
   div [
         style [ ("width", "270px")
@@ -133,5 +135,5 @@ sudokuGrid board =
               , ("border", "1px black solid")
               ] 
       ]
-      (List.map2 cell cells Sudoku.squares)
+      (List.map cellBlock cells)
 

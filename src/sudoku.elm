@@ -1,17 +1,28 @@
 module Sudoku exposing (
                 rows, cols, squares, unitlist, units, peers, getUnits, getPeers,
-                gridValues, parseGrid, blocks
+                gridValues, parseGrid, blocks, values
                 ) 
 {-| Sudoku board representation and solver
 
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
 
-@docs gridValues, parseGrid, blocks
+@docs gridValues, parseGrid, blocks, values
 -}
 
 import Array
 import Dict
 import String exposing (..)
+
+
+-- solving --
+
+{-| The possible values for all squares
+-}
+values : Dict.Dict String (List Char)
+values =
+  List.map (\s -> (s, (String.toList digits))) squares
+  |> Dict.fromList
+
 
 -- the board elements
 
