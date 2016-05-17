@@ -22,7 +22,17 @@ values : Dict.Dict String (List Char)
 values =
   List.map (\s -> (s, (String.toList digits))) squares
   |> Dict.fromList
+  |> eliminate "A3" '3'
 
+eliminate : String -> Char -> Dict.Dict String (List Char) -> Dict.Dict String (List Char)
+eliminate key digit values =
+  Dict.update key (\x -> eliminateValue x digit) values
+
+eliminateValue : Maybe (List Char) -> Char -> Maybe (List Char)
+eliminateValue vals val =
+  case vals of
+    Nothing   -> Nothing
+    Just vals -> Just (List.filter (\v -> v /= val) vals)
 
 -- the board elements
 
