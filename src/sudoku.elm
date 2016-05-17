@@ -13,20 +13,66 @@ import Array
 import Dict
 import String exposing (..)
 
+type alias Grid = Dict.Dict String (List Char) 
 
 -- solving --
 
 {-| The possible values for all squares
 -}
-values : Dict.Dict String (List Char)
+values : Grid
 values =
   List.map (\s -> (s, (String.toList digits))) squares
   |> Dict.fromList
-  |> eliminate "A3" '3'
+  |> eliminate "A3" '1'
+  |> eliminate "A3" '2'
+  |> eliminate "A3" '4'
+  |> eliminate "A3" '5'
+  |> eliminate "A3" '6'
+  |> eliminate "A3" '7'
+  |> eliminate "A3" '8'
+  |> eliminate "A3" '9'
 
-eliminate : String -> Char -> Dict.Dict String (List Char) -> Dict.Dict String (List Char)
+eliminate : String -> Char -> Grid -> Grid
 eliminate key digit values =
-  Dict.update key (\x -> eliminateValue x digit) values
+  let 
+    eliminated = 
+      Dict.update key (\x -> eliminateValue x digit) values
+    new_vals =
+      Dict.get key eliminated
+  in 
+    case new_vals of
+      Nothing   -> Dict.fromList [("",[])]
+      Just new_vals ->
+        if List.length new_vals == 1 then
+          -- List.map2 (eliminate) peers eliminated
+          eliminateFromPeers (Dict.get key peers) (List.head new_vals) eliminated
+        else
+          eliminated
+
+eliminateFromPeers : Maybe (List String) -> Maybe Char -> Grid -> Grid
+eliminateFromPeers peers digit values =
+  case peers of
+    Nothing -> 
+      values
+    Just peers ->
+      case digit of
+        Nothing ->
+          values
+        Just digit ->
+          eliminateFromPeersRecursive peers digit values
+
+eliminateFromPeersRecursive : List String -> Char -> Grid -> Grid
+eliminateFromPeersRecursive peers digit values =
+    case peers of 
+      [] ->
+        values
+      [x] ->
+        eliminate x digit values
+      (x::xs) ->
+        let 
+          e_values = eliminate x digit values
+        in
+          eliminateFromPeersRecursive xs digit e_values
 
 eliminateValue : Maybe (List Char) -> Char -> Maybe (List Char)
 eliminateValue vals val =
