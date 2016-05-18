@@ -45,10 +45,14 @@ update action model =
 
 view : Model -> Html String
 view model =
-  div []
+  let 
+    grid = 
+      Sudoku.parseGrid randomBoard
+  in
+    div []
       [ sudokuGrid model.board
       -- , div [] [ text " ------- "]
-      , div [] [ text (toString Sudoku.values) ]
+      , div [] [ text (toString grid) ]
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.squares) ]
       -- , div [] [ text (toString (List.length Sudoku.squares)) ]
@@ -79,12 +83,12 @@ cellBlockNumber cell =
       _          -> 0
 
 
-cellBlock : (String, Maybe String) -> Html String
+cellBlock : (String, Maybe Char) -> Html String
 cellBlock (square, val) = 
   let 
     noZero v =   
       case v of
-        Just v  -> v
+        Just v  -> String.fromChar v
         Nothing -> ""
   in
     div []

@@ -32,21 +32,15 @@ assignFromBoard board values =
         Nothing -> False
         Just val -> True
 
-    valToChar (cell, val) =
+    noMaybe (cell, val) =
       case val of
         Nothing -> (cell, ' ')
-        Just val ->
-          let
-            vals = String.toList val
-          in
-            case List.head vals of
-              Nothing -> (cell, ' ')
-              Just value -> (cell, value)
+        Just val -> (cell, val)
 
     assignables =
       Dict.toList (gridValues board)
       |> List.filter (\v -> getFixed v)
-      |> List.map (valToChar)
+      |> List.map noMaybe
 
   in 
     assignFromBoardValues assignables values
@@ -65,13 +59,13 @@ assignFromBoardValues assignables values =
          assignFromBoardValues rest assigned
         
 
-{-| The possible values for all squares
+{-| Parse the grid and set fixed values and possible values for all squares
 -}
-values : Grid
-values =
+parseGrid : String -> Grid
+parseGrid board = 
   List.map (\s -> (s, (String.toList digits))) squares
   |> Dict.fromList
-  |> assignFromBoard a_board
+  |> assignFromBoard board
 
 {-
   |> assign "A3" '3'
@@ -211,22 +205,22 @@ getPeers sq =
 
 {-| Parse a raw grid string into a dict of squares: values
 -}
-gridValues : String -> Dict.Dict String (Maybe String)
+gridValues : String -> Dict.Dict String (Maybe Char)
 gridValues grid = 
   let 
       sq_value s =
-        if List.member s (str_list digits) then
+        if List.member s (String.toList digits) then
           Just s
         else
           Nothing
   in    
-    str_list grid 
+    String.toList grid 
     |> List.map sq_value 
     |> zip squares 
     |> Dict.fromList
 
 {-| Parse the grid and set fixed values and possible values for all squares
--}
+
 parseGrid : String -> Dict.Dict String String
 parseGrid grid =
   let
@@ -236,18 +230,14 @@ parseGrid grid =
       case sq of
         (s, Just sq_val) -> (s, sq_val)
         (s, Nothing)     -> (s, digits)
-    parse_grid =
-      Dict.toList (gridValues grid)
-      |> List.map known_or_any 
-      |> Dict.fromList
+
     -- TODO propagate failure to assign a value
   in
-    -- if there are any Nothings left assignment failed
-    --if (List.member Nothing (Dict.values parse_grid)) then
-    --   Nothing
-    --else
-    --  Just 
-    parse_grid
+    gridValues grid 
+    |> Dict.toList 
+    |> List.map known_or_any 
+    |> Dict.fromList
+-}
     
        
 
