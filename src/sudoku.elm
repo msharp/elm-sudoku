@@ -13,9 +13,57 @@ import Array
 import Dict
 import String exposing (..)
 
-type alias Grid = Dict.Dict String (List Char) 
+type alias Grid = 
+  Dict.Dict String (List Char) 
+
+type alias Board = 
+  Dict.Dict String (Maybe String)
 
 -- solving --
+
+a_board = 
+  "003020600900305001001806400008102900700000008006708200002609500800203009005010300"
+
+assignFromBoard : String -> Grid -> Grid
+assignFromBoard board values =
+  let 
+    getFixed (cell,val) =
+      case val of
+        Nothing -> False
+        Just val -> True
+
+    valToChar (cell, val) =
+      case val of
+        Nothing -> (cell, ' ')
+        Just val ->
+          let
+            vals = String.toList val
+          in
+            case List.head vals of
+              Nothing -> (cell, ' ')
+              Just value -> (cell, value)
+
+    assignables =
+      Dict.toList (gridValues board)
+      |> List.filter (\v -> getFixed v)
+      |> List.map (valToChar)
+
+  in 
+    assignFromBoardValues assignables values
+
+assignFromBoardValues : List (String, Char) -> Grid -> Grid
+assignFromBoardValues assignables values =
+  case assignables of
+    [] -> values
+    (next_assign::rest) ->
+      let 
+        (a,v) =
+          next_assign
+        assigned =
+          assign a v values
+      in
+         assignFromBoardValues rest assigned
+        
 
 {-| The possible values for all squares
 -}
@@ -23,62 +71,83 @@ values : Grid
 values =
   List.map (\s -> (s, (String.toList digits))) squares
   |> Dict.fromList
-  |> eliminate "A3" '1'
-  |> eliminate "A3" '2'
-  |> eliminate "A3" '4'
-  |> eliminate "A3" '5'
-  |> eliminate "A3" '6'
-  |> eliminate "A3" '7'
-  |> eliminate "A3" '8'
-  |> eliminate "A3" '9'
+  |> assignFromBoard a_board
+
+{-
+  |> assign "A3" '3'
+  |> assign "A5" '2'
+  |> assign "A7" '6'
+  |> assign "B1" '9'
+  |> assign "C3" '1'
+  -}
+
+
+assign : String -> Char -> Grid -> Grid
+assign cell digit values = 
+  let
+    assigned =
+      Dict.update cell (\x -> assignValue digit x) values
+  in
+    case Dict.get cell peers of
+      Just cell_peers ->
+        eliminateFromPeers digit cell_peers assigned
+      Nothing -> 
+        assigned
 
 eliminate : String -> Char -> Grid -> Grid
-eliminate key digit values =
+eliminate cell digit values =
   let 
+    -- remove the digit from the cell possibilities
     eliminated = 
-      Dict.update key (\x -> eliminateValue x digit) values
-    new_vals =
-      Dict.get key eliminated
+      eliminateFromCell cell digit values
   in 
-    case new_vals of
-      Nothing   -> Dict.fromList [("",[])]
-      Just new_vals ->
-        if List.length new_vals == 1 then
-          -- List.map2 (eliminate) peers eliminated
-          eliminateFromPeers (Dict.get key peers) (List.head new_vals) eliminated
-        else
-          eliminated
+    -- now what is left?
+    case Dict.get cell eliminated of
+      Nothing -> 
+        -- this should be an error in the board
+        eliminated 
 
-eliminateFromPeers : Maybe (List String) -> Maybe Char -> Grid -> Grid
-eliminateFromPeers peers digit values =
-  case peers of
-    Nothing -> 
-      values
-    Just peers ->
-      case digit of
-        Nothing ->
-          values
-        Just digit ->
-          eliminateFromPeersRecursive peers digit values
+      Just remains ->
+        case remains of
+          [digit] -> 
+            -- only one value left, can eliminate this from the peers
+            case Dict.get cell peers of
+              Just cell_peers ->
+                eliminateFromPeers digit cell_peers eliminated
+              
+              Nothing -> -- it has no peers (should never occur)
+                eliminated 
+          _ ->
+            eliminated 
 
-eliminateFromPeersRecursive : List String -> Char -> Grid -> Grid
-eliminateFromPeersRecursive peers digit values =
-    case peers of 
+eliminateFromPeers : Char -> List String -> Grid -> Grid
+eliminateFromPeers digit cell_peers values =
+    let _ = Debug.log "peers" (toString cell_peers)
+    in
+    case cell_peers of 
       [] ->
         values
-      [x] ->
-        eliminate x digit values
-      (x::xs) ->
-        let 
-          e_values = eliminate x digit values
-        in
-          eliminateFromPeersRecursive xs digit e_values
+      (peer::more_peers) ->
+        eliminateFromCell peer digit values
+        |> eliminateFromPeers digit more_peers 
 
-eliminateValue : Maybe (List Char) -> Char -> Maybe (List Char)
-eliminateValue vals val =
+eliminateFromCell : String -> Char -> Grid -> Grid
+eliminateFromCell cell digit values =
+      Dict.update cell (\x -> eliminateValue digit x) values
+
+eliminateValue : Char -> Maybe (List Char) -> Maybe (List Char)
+eliminateValue val vals =
   case vals of
     Nothing   -> Nothing
     Just vals -> Just (List.filter (\v -> v /= val) vals)
+
+assignValue : Char -> Maybe (List Char) -> Maybe (List Char)
+assignValue val vals =
+  case vals of
+    Nothing   -> Nothing
+    Just vals -> Just [val]
+
+
 
 -- the board elements
 
@@ -183,10 +252,6 @@ parseGrid grid =
        
 
 
-assign values s d =
-  False
-
-
 contradictoryGrid grid = 
   Dict.values grid
   |> List.member Nothing
@@ -236,12 +301,15 @@ cross_digits alphas =
 -}
 blocks : List (List String)
 blocks =
-  let a = blockGroups alphas
-        |> List.map (\l -> List.repeat 3 l) 
-        |> List.concat
-      n = blockGroups digits
-        |> List.repeat 3 
-        |> List.concat 
+  let 
+    a = 
+      blockGroups alphas
+      |> List.map (\l -> List.repeat 3 l) 
+      |> List.concat
+    n = 
+      blockGroups digits
+      |> List.repeat 3 
+      |> List.concat 
   in
      List.map2 cross a n
 
