@@ -1,21 +1,25 @@
 module Sudoku exposing (
                 rows, cols, squares, unitlist, units, peers, getUnits, getPeers,
-                gridValues, parseGrid, blocks, values
+                gridValues, parseGrid, blocks, Board, Grid
                 ) 
 {-| Sudoku board representation and solver
 
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
 
-@docs gridValues, parseGrid, blocks, values
+@docs gridValues, parseGrid, blocks, Board, Grid
 -}
 
 import Array
 import Dict
 import String exposing (..)
 
+{-| A grid is all the cells with their possible values
+-}
 type alias Grid = 
   Dict.Dict String (List Char) 
 
+{-| A board is all the cells with their declared values
+-}
 type alias Board = 
   Dict.Dict String (Maybe String)
 
@@ -27,20 +31,16 @@ a_board =
 assignFromBoard : String -> Grid -> Grid
 assignFromBoard board values =
   let 
-    getFixed (cell,val) =
+    setValue (cell, val) = 
       case val of
-        Nothing -> False
-        Just val -> True
-
-    noMaybe (cell, val) =
-      case val of
-        Nothing -> (cell, ' ')
+        Nothing -> ("", ' ')
         Just val -> (cell, val)
 
     assignables =
-      Dict.toList (gridValues board)
-      |> List.filter (\v -> getFixed v)
-      |> List.map noMaybe
+      gridValues board
+      |> Dict.toList
+      |> List.map setValue 
+      |> List.filter (\t -> t /= ("", ' '))
 
   in 
     assignFromBoardValues assignables values
@@ -66,27 +66,53 @@ parseGrid board =
   List.map (\s -> (s, (String.toList digits))) squares
   |> Dict.fromList
   |> assignFromBoard board
+  |> reviewBoard
 
-{-
-  |> assign "A3" '3'
-  |> assign "A5" '2'
-  |> assign "A7" '6'
-  |> assign "B1" '9'
-  |> assign "C3" '1'
-  -}
+{-| Find any cells with one option and ensure it is eliminated from peers
+-}
+reviewBoard : Grid -> Grid
+reviewBoard grid =
+  let 
+    opts =
+      singularOptions grid
 
+    change_cells = 
+      List.map (\(cell,_) -> cell) opts
+
+    flushed_grid = 
+      flushBoard opts grid
+
+    single_options = 
+      singularOptions flushed_grid
+      |> List.map (\(cell,_) -> cell)
+
+  in
+    if change_cells == single_options then
+      flushed_grid -- simple puzzles are now solved
+    else
+      reviewBoard flushed_grid
+
+flushBoard : List (String, Char) -> Grid -> Grid
+flushBoard opts grid =
+  case opts of
+    [] -> grid
+    (opt::remaining_opts) ->
+      let 
+        (cell,val) = opt
+      in
+        eliminateFromPeers val (getPeers cell) grid
+        |> flushBoard remaining_opts 
 
 assign : String -> Char -> Grid -> Grid
-assign cell digit values = 
-  let
-    assigned =
-      Dict.update cell (\x -> assignValue digit x) values
-  in
-    case Dict.get cell peers of
-      Just cell_peers ->
-        eliminateFromPeers digit cell_peers assigned
-      Nothing -> 
-        assigned
+assign cell digit grid = 
+    Dict.update cell (\x -> assignValue digit x) grid
+    |> eliminateFromPeers digit (getPeers cell) 
+
+assignValue : Char -> Maybe (List Char) -> Maybe (List Char)
+assignValue val vals =
+  case vals of
+    Nothing   -> Nothing
+    Just vals -> Just [val]
 
 eliminate : String -> Char -> Grid -> Grid
 eliminate cell digit values =
@@ -105,25 +131,18 @@ eliminate cell digit values =
         case remains of
           [digit] -> 
             -- only one value left, can eliminate this from the peers
-            case Dict.get cell peers of
-              Just cell_peers ->
-                eliminateFromPeers digit cell_peers eliminated
-              
-              Nothing -> -- it has no peers (should never occur)
-                eliminated 
+            eliminateFromPeers digit (getPeers cell) eliminated
           _ ->
             eliminated 
 
 eliminateFromPeers : Char -> List String -> Grid -> Grid
-eliminateFromPeers digit cell_peers values =
-    let _ = Debug.log "peers" (toString cell_peers)
-    in
-    case cell_peers of 
-      [] ->
-        values
-      (peer::more_peers) ->
-        eliminateFromCell peer digit values
-        |> eliminateFromPeers digit more_peers 
+eliminateFromPeers digit cell_peers grid =
+  case cell_peers of 
+    [] ->
+      grid
+    (peer::more_peers) ->
+      eliminateFromCell peer digit grid
+      |> eliminateFromPeers digit more_peers 
 
 eliminateFromCell : String -> Char -> Grid -> Grid
 eliminateFromCell cell digit values =
@@ -135,11 +154,31 @@ eliminateValue val vals =
     Nothing   -> Nothing
     Just vals -> Just (List.filter (\v -> v /= val) vals)
 
-assignValue : Char -> Maybe (List Char) -> Maybe (List Char)
-assignValue val vals =
-  case vals of
-    Nothing   -> Nothing
-    Just vals -> Just [val]
+{-| get the cells from a grid where only 1 value is present
+
+FIXME this is a bit messy, dancing around maybes and chars
+-}
+singularOptions : Grid -> List (String, Char)
+singularOptions grid =
+  let
+    singleOption (cell, options) =
+      case List.length options of
+        1 -> True
+        _ -> False
+
+    asChar (cell, options) =
+      let 
+        opt = 
+          case List.head options of
+            Nothing -> ' '
+            Just v  -> v
+      in
+         (cell, opt)
+
+  in
+    Dict.toList grid
+    |> List.filter singleOption
+    |> List.map asChar
 
 
 

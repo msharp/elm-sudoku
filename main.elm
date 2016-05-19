@@ -18,13 +18,14 @@ main =
 
 type alias Model = 
   {
-    board: String
+    board: String,
+    grid: Sudoku.Grid
   }
 
 
 init : (Model, Cmd String)
 init =
-  (Model randomBoard, Cmd.none)
+  (Model randomBoard (Sudoku.parseGrid randomBoard), Cmd.none)
 
 
 randomBoard : String
@@ -36,23 +37,19 @@ randomBoard =
 
 type Action = Reset | Update
 
-update : String -> { board : String } -> ( Model, Cmd String )
+update : String -> Model -> ( Model, Cmd String )
 update action model =
-  (Model randomBoard, Cmd.none)
+  (Model randomBoard (Sudoku.parseGrid randomBoard), Cmd.none)
 
 
 -- VIEW
 
 view : Model -> Html String
 view model =
-  let 
-    grid = 
-      Sudoku.parseGrid randomBoard
-  in
-    div []
+  div []
       [ sudokuGrid model.board
       -- , div [] [ text " ------- "]
-      , div [] [ text (toString grid) ]
+      , div [] [ text (toString model.grid) ]
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.squares) ]
       -- , div [] [ text (toString (List.length Sudoku.squares)) ]
