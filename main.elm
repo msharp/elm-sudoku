@@ -35,7 +35,11 @@ randomBoard =
 
 -- UPDATE
 
-type Action = Reset | Update
+type Action = 
+  Reset 
+  | Update
+  | Solve
+  | New
 
 update : String -> Model -> ( Model, Cmd String )
 update action model =
@@ -49,7 +53,7 @@ view model =
   div []
       [ sudokuGrid model.board
       -- , div [] [ text " ------- "]
-      , div [] [ text (toString model.grid) ]
+      , div [] [ text (toString (Sudoku.resolveGrid model.grid)) ]
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.squares) ]
       -- , div [] [ text (toString (List.length Sudoku.squares)) ]
@@ -58,7 +62,9 @@ view model =
       -- , div [] [ text (toString (List.length Sudoku.unitlist)) ]
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.blocks) ]
+      -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.units) ]
+      -- , div [] [ text " ------- "]
       -- , div [] [ text (toString Sudoku.peers) ]
       -- , div [] [ text " ------- "]
       -- , div [] [ text (toString (Sudoku.getPeers "C2")) ]
@@ -80,13 +86,13 @@ cellBlockNumber cell =
       _          -> 0
 
 
-cellBlock : (String, Maybe Char) -> Html String
+cellBlock : (String, List Char) -> Html String
 cellBlock (square, val) = 
   let 
     noZero v =   
       case v of
-        Just v  -> String.fromChar v
-        Nothing -> ""
+        [d] -> String.fromChar d
+        _   -> ""
   in
     div []
       [ input 
@@ -126,7 +132,7 @@ sudokuGrid : String -> Html String
 sudokuGrid board =
   let 
     cells = 
-      Sudoku.gridValues board
+      Sudoku.parseGrid board
       |> Dict.toList -- list can be mapped
   in
   div [
