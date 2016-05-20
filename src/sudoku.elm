@@ -3,9 +3,7 @@ module Sudoku exposing (
                 parseGrid, resolveGrid, blocks, Grid
                 ) 
 {-| Sudoku board representation and solver
-
 @docs rows, cols, squares, unitlist, units, peers, getUnits, getPeers
-
 @docs parseGrid, resolveGrid, blocks, Grid
 -}
 
@@ -162,15 +160,15 @@ alphas = "ABCDEFGHI"
 
 {-| The rows of the board
 -}
-rows : String
+rows : List Char
 rows = 
-  alphas
+  String.toList alphas
 
 {-| The columns of the board
 -}
-cols : String
+cols : List Char
 cols =
-  digits
+  String.toList digits
 
 {-| The squares which make up a sudoku borad
 -}
@@ -182,9 +180,22 @@ squares =
 -}
 unitlist : List (List String)
 unitlist  = 
-  cross_digits rows 
-  |> List.append (cross_alphas digits) 
-  |> List.append blocks
+  let
+    cross_alphas digits =
+      let cfa f a = 
+        (cross [f] cols) :: a
+      in
+         List.foldr (cfa) [] rows
+
+    cross_digits alphas =
+      let cfd f a = 
+          (cross rows [f]) :: a
+      in
+        List.foldr (cfd) [] cols
+  in
+    cross_digits rows 
+    |> List.append (cross_alphas digits) 
+    |> List.append blocks
 
 {-| The units to which each square belongs 
 -}
@@ -225,56 +236,12 @@ getPeers sq =
       |> Set.toList
       
 
-
 -- tests --
 
 -- solved ?
 
 -- broken ?
-contradictoryGrid grid = 
-  Dict.values grid
-  |> List.member Nothing
 
--------------------------------------------------------
--- cruft to generate board elements
--------------------------------------------------------
-
--- transform a string into a list of single-char strings
-str_list : String -> List String
-str_list str =
-  List.map String.fromChar (String.toList str) 
-
--- a unique set from a list
-set : List String -> List String
-set squares =
-  let s f a = 
-    if (List.member f a) then a else (List.append [f] a)
-  in
-    List.foldr (s) [] squares
-
--- generate squares
-
-cross : String -> String -> List String
-cross alphas digits =
-  let cd alpha digits = 
-    List.map (\d -> String.append alpha d) (str_list digits) 
-  in
-    List.map (\a -> cd a digits) (str_list alphas) 
-    |> List.concat
-
--- generate unitlists
-
-cross_alphas digits =
-  let cfa f a = 
-    (cross alphas (String.fromChar f)) :: a
-  in
-     String.foldr (cfa) [] digits
-
-cross_digits alphas =
-  let cfd f a = 
-    (cross (String.fromChar f) digits) :: a
-  in
-    String.foldr (cfd) [] alphas
 
 {-| The 9 blocks of the sudoku grid
 -}
@@ -282,27 +249,46 @@ blocks : List (List String)
 blocks =
   let 
     a = 
-      blockGroups alphas
+      blockGroups rows
       |> List.map (\l -> List.repeat 3 l) 
       |> List.concat
     n = 
-      blockGroups digits
+      blockGroups cols
       |> List.repeat 3 
       |> List.concat 
   in
      List.map2 cross a n
 
-blockGroups : String -> List String
+blockGroups : List Char -> List (List Char)
 blockGroups labels =
-  List.append [] [(String.slice 0 3 labels)]
-  |> List.append [(String.slice 3 6 labels)]
-  |> List.append [(String.slice 6 9 labels)]
-  |> List.reverse
+  let
+    lbls =
+      List.map (\c -> String.fromChar c) labels
+      |> String.concat
+  in
+    List.append [] [(String.toList (String.slice 0 3 lbls))]
+    |> List.append [(String.toList (String.slice 3 6 lbls))]
+    |> List.append [(String.toList (String.slice 6 9 lbls))]
+    |> List.reverse
+
+
+-- generate squares
+
+cross : List Char -> List Char -> List String
+cross rws cls =
+  let 
+    inner_cross r c = 
+      List.map (\d -> String.append r (String.fromChar d)) c
+  in
+    List.map (\a -> inner_cross (String.fromChar a) cls) rws 
+    |> List.concat
+
 
 
 {-| The zip function takes in two lists and returns a combined
 list. It combines the elements of each list pairwise until one
 of the lists runs out of elements.
+
     zip [1,2,3] ['a','b','c'] == [(1,'a'), (2,'b'), (3,'c')]
     
 -}
@@ -313,4 +299,5 @@ zip xs ys =
         (x,y) :: zip xs' ys'
       (_, _) ->
          []
+
 
